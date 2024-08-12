@@ -1,0 +1,37 @@
+package router
+
+import (
+	"task/api/controller"
+	"task/api/middleware"
+
+	"github.com/gin-gonic/gin"
+)
+
+func SetupRouter(userController *controller.UserController, taskController *controller.TaskController, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
+	router := gin.Default()
+
+	router.POST("/register", userController.Register)
+	router.POST("/login", userController.Login)
+
+	authorized := router.Group("/")
+	authorized.Use(authMiddleware.AuthMiddleware())
+	{
+		authorized.GET("/tasks", taskController.GetAllTasks)
+		authorized.GET("/tasks/:id", taskController.GetTaskByID)
+		authorized.POST("/tasks", taskController.CreateTask)
+		authorized.PUT("/tasks/:id", taskController.UpdateTask)
+		authorized.DELETE("/tasks/:id", taskController.DeleteTask)
+	}
+
+	admin := router.Group("/admin")
+	admin.Use(authMiddleware.AuthMiddleware(), middleware.AdminMiddleware())
+	{
+		admin.GET("/tasks", taskController.GetAllTasks)
+		admin.GET("/tasks/:id", taskController.GetTaskByID)
+		admin.POST("/tasks", taskController.CreateTask)
+		admin.PUT("/tasks/:id", taskController.UpdateTask)
+		admin.DELETE("/tasks/:id", taskController.DeleteTask)
+	}
+
+	return router
+}
